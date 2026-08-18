@@ -11,4 +11,8 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
     List<Mission> findByStatus(String status);
     List<Mission> findByDriverId(Long driverId);
     List<Mission> findByVehicleId(Long vehicleId);
+
+    long countByStatusIgnoreCaseNotIn(List<String> excludedStatuses);
+
+    long countByStatusIgnoreCase(String status);
 }

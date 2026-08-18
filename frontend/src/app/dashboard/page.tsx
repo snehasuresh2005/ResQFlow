@@ -42,20 +42,67 @@ export default function DashboardPage() {
         queryKey: ['dashboardMetrics'],
         queryFn: async () => {
             const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
-            const res = await fetch(`${apiBase}/analytics/dashboard`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('resqflow_token')}` }
-            });
-            if (!res.ok) throw new Error('Failed to load metrics');
-            return res.json();
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15000);
+            try {
+                const res = await fetch(`${apiBase}/analytics/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('resqflow_token')}` },
+                    signal: controller.signal,
+                });
+                if (!res.ok) throw new Error('Failed to load metrics');
+                return res.json();
+            } finally {
+                clearTimeout(timeout);
+            }
         },
         enabled: !!token,
-        refetchInterval: 5000 // Poll every 5 seconds for live dashboard updates
+        refetchInterval: 30000,
+        staleTime: 10000,
+        retry: 2,
+        retryDelay: 3000,
     });
 
     if (!token || isLoading) {
         return (
-            <div className="flex h-screen bg-slate-950 items-center justify-center">
-                <div className="text-slate-400 text-sm animate-pulse">Loading Operations Dashboard...</div>
+            <div className="flex bg-slate-950 min-h-screen">
+                {/* Sidebar skeleton */}
+                <div className="w-16 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-6 gap-6">
+                    {[...Array(5)].map((_, i) => (
+                        <div key={i} className="h-8 w-8 rounded-lg bg-slate-800 animate-pulse" />
+                    ))}
+                </div>
+                <main className="flex-1 p-8 space-y-6">
+                    {/* Header skeleton */}
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                            <div className="h-7 w-56 bg-slate-800 rounded animate-pulse" />
+                            <div className="h-4 w-72 bg-slate-800/60 rounded animate-pulse" />
+                        </div>
+                        <div className="h-8 w-36 bg-slate-800 rounded-lg animate-pulse" />
+                    </div>
+                    {/* Metrics grid skeleton */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+                                <div className="h-3 w-28 bg-slate-800 rounded animate-pulse" />
+                                <div className="h-8 w-16 bg-slate-800 rounded animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
+                    {/* Charts skeleton */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {[...Array(2)].map((_, i) => (
+                            <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+                                <div className="h-4 w-48 bg-slate-800 rounded animate-pulse" />
+                                <div className="h-64 bg-slate-800/40 rounded animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
+                    {/* Cold start message */}
+                    <div className="text-center text-slate-500 text-xs pt-2 animate-pulse">
+                        Connecting to operations server — first load may take up to 30 seconds...
+                    </div>
+                </main>
             </div>
         );
     }
@@ -65,7 +112,7 @@ export default function DashboardPage() {
             <div className="flex h-screen bg-slate-950 items-center justify-center p-4">
                 <div className="bg-rose-950/40 border border-rose-900/50 rounded-xl p-4 flex gap-2 items-center text-rose-300">
                     <ShieldAlert className="h-5 w-5" />
-                    <span>Failed to establish connection to operations server.</span>
+                    <span>Failed to establish connection to operations server. The backend may be starting up — please refresh in 30 seconds.</span>
                 </div>
             </div>
         );

@@ -37,42 +37,33 @@ public class AnalyticsController {
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardMetricsDto> getDashboardMetrics() {
         long totalReqs = requestRepository.count();
-        long criticalReqs = requestRepository.findAll().stream()
-                .filter(r -> "CRITICAL".equalsIgnoreCase(r.getPriority())).count();
-        long activeMissions = missionRepository.findAll().stream()
-                .filter(m -> !"DELIVERED".equalsIgnoreCase(m.getStatus()) && 
-                             !"FAILED".equalsIgnoreCase(m.getStatus()) && 
-                             !"CANCELLED".equalsIgnoreCase(m.getStatus()))
-                .count();
-        long vehiclesInTransit = missionRepository.findByStatus("IN_TRANSIT").size();
+        long criticalReqs = requestRepository.countByPriorityIgnoreCase("CRITICAL");
+        long activeMissions = missionRepository.countByStatusIgnoreCaseNotIn(
+                List.of("DELIVERED", "FAILED", "CANCELLED"));
+        long vehiclesInTransit = missionRepository.countByStatusIgnoreCase("IN_TRANSIT");
 
         // Calculate fulfillment rate
-        long total = requestRepository.count();
-        long fullyAllocated = requestRepository.findByStatus("FULLY_ALLOCATED").size() + requestRepository.findByStatus("FULFILLED").size();
-        double rate = total == 0 ? 0.0 : (double) fullyAllocated / total;
+        long fullyAllocated = requestRepository.countByStatusIgnoreCaseIn(
+                List.of("FULLY_ALLOCATED", "FULFILLED"));
+        double rate = totalReqs == 0 ? 0.0 : (double) fullyAllocated / totalReqs;
 
-        // Calculate dynamic average response time (minutes)
-        double avgResponseTime = allocationRepository.findAll().stream()
-                .filter(a -> a.getRequest() != null && a.getRequest().getCreatedAt() != null && a.getCreatedAt() != null)
-                .mapToLong(a -> java.time.Duration.between(a.getRequest().getCreatedAt(), a.getCreatedAt()).toMinutes())
-                .average()
-                .orElse(18.3);
+        // Calculate dynamic average response time (minutes) via DB aggregate
+        double avgResponseTime = allocationRepository.findAverageResponseTimeMinutes();
 
-        // Calculate dynamic category allocation distribution
+        // Calculate dynamic category allocation distribution via DB aggregate
         java.util.Map<String, Double> categoryAllocations = new java.util.HashMap<>();
         categoryAllocations.put("FOOD", 0.0);
         categoryAllocations.put("WATER", 0.0);
         categoryAllocations.put("MEDICAL", 0.0);
         categoryAllocations.put("SHELTER", 0.0);
 
-        allocationRepository.findAll().stream().forEach(a -> {
-            if (a.getResource() != null && a.getResource().getResourceType() != null) {
-                String type = a.getResource().getResourceType().toUpperCase();
-                if (categoryAllocations.containsKey(type)) {
-                    categoryAllocations.put(type, categoryAllocations.get(type) + a.getQuantity());
-                }
+        for (Object[] row : allocationRepository.findAllocationSumsByCategory()) {
+            String type = (String) row[0];
+            Double sum = ((Number) row[1]).doubleValue();
+            if (categoryAllocations.containsKey(type)) {
+                categoryAllocations.put(type, sum);
             }
-        });
+        }
 
         DashboardMetricsDto metrics = DashboardMetricsDto.builder()
                 .totalRequests(totalReqs)

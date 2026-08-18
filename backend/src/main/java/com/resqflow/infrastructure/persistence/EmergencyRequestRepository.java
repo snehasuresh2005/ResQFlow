@@ -16,6 +16,10 @@ public interface EmergencyRequestRepository extends JpaRepository<EmergencyReque
     Optional<EmergencyRequest> findByRequestNumber(String requestNumber);
     List<EmergencyRequest> findByStatus(String status);
 
+    long countByPriorityIgnoreCase(String priority);
+
+    long countByStatusIgnoreCaseIn(List<String> statuses);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM EmergencyRequest r WHERE r.id = :id")
     Optional<EmergencyRequest> findByIdForUpdate(@Param("id") Long id);
