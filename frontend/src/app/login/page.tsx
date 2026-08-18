@@ -43,11 +43,17 @@ export default function LoginPage() {
         }
     };
 
-    const fillCredentials = (role: 'admin' | 'coordinator') => {
+    const fillCredentials = (role: 'admin' | 'coordinator' | 'driver' | 'volunteer' | 'viewer') => {
         if (role === 'admin') {
             setEmail('admin@resqflow.com');
-        } else {
+        } else if (role === 'coordinator') {
             setEmail('coordinator@resqflow.com');
+        } else if (role === 'driver') {
+            setEmail('driver@resqflow.com');
+        } else if (role === 'volunteer') {
+            setEmail('volunteer@resqflow.com');
+        } else {
+            setEmail('viewer@resqflow.com');
         }
         setPassword('password');
     };
@@ -76,7 +82,7 @@ export default function LoginPage() {
                 {/* Form */}
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-350">Operations Email</label>
+                        <label className="text-xs font-semibold text-slate-300">Operations Email</label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
                             <input
@@ -91,7 +97,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-350">Password</label>
+                        <label className="text-xs font-semibold text-slate-300">Password</label>
                         <div className="relative">
                             <KeyRound className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
                             <input
@@ -117,21 +123,44 @@ export default function LoginPage() {
 
                 {/* Fast Seeding Helpers */}
                 <div className="pt-4 border-t border-slate-800 space-y-3">
-                    <p className="text-xs font-semibold text-center text-slate-500">Developer Quick Access</p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <p className="text-xs font-semibold text-center text-slate-500">Demo Fast Access (Password: password)</p>
+                    <div className="grid grid-cols-3 gap-2">
                         <button
                             onClick={() => fillCredentials('admin')}
                             type="button"
                             className="bg-slate-800/40 hover:bg-slate-800 border border-slate-800 rounded-xl py-2 text-xs font-medium text-slate-300 transition-all cursor-pointer"
                         >
-                            Fill ADMIN
+                            ADMIN
                         </button>
                         <button
                             onClick={() => fillCredentials('coordinator')}
                             type="button"
                             className="bg-slate-800/40 hover:bg-slate-800 border border-slate-800 rounded-xl py-2 text-xs font-medium text-slate-300 transition-all cursor-pointer"
                         >
-                            Fill COORDINATOR
+                            COORD
+                        </button>
+                        <button
+                            onClick={() => fillCredentials('driver')}
+                            type="button"
+                            className="bg-slate-800/40 hover:bg-slate-800 border border-slate-800 rounded-xl py-2 text-xs font-medium text-slate-300 transition-all cursor-pointer"
+                        >
+                            DRIVER
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            onClick={() => fillCredentials('volunteer')}
+                            type="button"
+                            className="bg-slate-800/40 hover:bg-slate-800 border border-slate-800 rounded-xl py-2 text-xs font-medium text-slate-300 transition-all cursor-pointer"
+                        >
+                            VOLUNTEER
+                        </button>
+                        <button
+                            onClick={() => fillCredentials('viewer')}
+                            type="button"
+                            className="bg-slate-800/40 hover:bg-slate-800 border border-slate-800 rounded-xl py-2 text-xs font-medium text-slate-300 transition-all cursor-pointer"
+                        >
+                            VIEWER
                         </button>
                     </div>
                 </div>
