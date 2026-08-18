@@ -1,0 +1,20 @@
+# Ignore local env files
+.env
+.env.*
+
+# Ignore backend build files
+backend/target/
+backend/out/
+backend/*.log
+
+# Ignore frontend build files
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/*.log
+
+# Git and IDE configs
+.git
+.idea/
+.vscode/
+*.swp
