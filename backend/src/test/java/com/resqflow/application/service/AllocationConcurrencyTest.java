@@ -10,6 +10,7 @@ import com.resqflow.infrastructure.persistence.DepotRepository;
 import com.resqflow.infrastructure.persistence.EmergencyRequestRepository;
 import com.resqflow.infrastructure.persistence.EmergencyZoneRepository;
 import com.resqflow.infrastructure.persistence.ResourceRepository;
+import com.resqflow.infrastructure.persistence.AllocationRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,9 +43,17 @@ public class AllocationConcurrencyTest {
     @Autowired
     private EmergencyZoneRepository zoneRepository;
 
+    @Autowired
+    private AllocationRepository allocationRepository;
+
     @Test
     public void testConcurrentAllocationsAreSafe() throws InterruptedException {
-        // 1. Prepare DB Entities
+        // 1. Prepare DB Entities (clear seeded data for isolation)
+        allocationRepository.deleteAll();
+        resourceRepository.deleteAll();
+        depotRepository.deleteAll();
+        requestRepository.deleteAll();
+
         Depot depot = depotRepository.save(Depot.builder()
                 .name("Test Depot")
                 .latitude(12.0)
@@ -105,7 +114,6 @@ public class AllocationConcurrencyTest {
         
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failureCount = new AtomicInteger(0);
-
         List<Future<Void>> futures = new ArrayList<>();
 
         for (int i = 0; i < threadCount; i++) {
@@ -113,7 +121,8 @@ public class AllocationConcurrencyTest {
             futures.add(executor.submit(() -> {
                 latch.await(); // wait for starter trigger
                 try {
-                    allocationService.allocateResources(requests.get(index).getId(), "NEAREST");
+                    Long reqId = requests.get(index).getId();
+                    allocationService.allocateResources(reqId, "NEAREST");
                     successCount.incrementAndGet();
                 } catch (Exception e) {
                     failureCount.incrementAndGet();

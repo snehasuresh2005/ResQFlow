@@ -37,3 +37,7 @@ logging:
     root: INFO
     com.resqflow: DEBUG
     org.hibernate.SQL: DEBUG
+
+kafka:
+  enabled: true
+

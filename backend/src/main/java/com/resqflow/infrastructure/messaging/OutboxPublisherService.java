@@ -4,7 +4,6 @@ import com.resqflow.domain.event.OutboxEvent;
 import com.resqflow.infrastructure.persistence.OutboxEventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,15 +14,13 @@ import java.util.List;
 public class OutboxPublisherService {
     private static final Logger logger = LoggerFactory.getLogger(OutboxPublisherService.class);
 
-    private static final String TOPIC = "resqflow-events";
-
     private final OutboxEventRepository outboxEventRepository;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final DomainEventPublisher domainEventPublisher;
 
     public OutboxPublisherService(OutboxEventRepository outboxEventRepository,
-                                  KafkaTemplate<String, String> kafkaTemplate) {
+                                  DomainEventPublisher domainEventPublisher) {
         this.outboxEventRepository = outboxEventRepository;
-        this.kafkaTemplate = kafkaTemplate;
+        this.domainEventPublisher = domainEventPublisher;
     }
 
     @Scheduled(fixedDelay = 1000)
@@ -34,20 +31,11 @@ public class OutboxPublisherService {
             return;
         }
 
-        logger.debug("Found {} pending outbox events to publish to Kafka.", pendingEvents.size());
+        logger.debug("Found {} pending outbox events to publish.", pendingEvents.size());
 
         for (OutboxEvent event : pendingEvents) {
             try {
-                // Key the Kafka record by aggregate ID to maintain order of operations per entity
-                kafkaTemplate.send(TOPIC, event.getAggregateId(), event.getPayload())
-                        .whenComplete((result, ex) -> {
-                            if (ex != null) {
-                                logger.error("Failed to publish outbox event: {}", event.getId(), ex);
-                            } else {
-                                logger.debug("Successfully published outbox event: {} to partition: {}", 
-                                        event.getId(), result.getRecordMetadata().partition());
-                            }
-                        });
+                domainEventPublisher.publish(event.getAggregateId(), event.getPayload());
 
                 event.setProcessed(true);
                 outboxEventRepository.save(event);

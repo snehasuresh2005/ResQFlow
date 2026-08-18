@@ -13,7 +13,14 @@ spring:
   kafka:
     listener:
       auto-startup: false
+management:
+  health:
+    redis:
+      enabled: false
+    kafka:
+      enabled: false
 logging:
   level:
     root: WARN
     com.resqflow: INFO
+

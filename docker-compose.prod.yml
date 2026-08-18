@@ -1,3 +1,18 @@
+# ==============================================================================
+# DEPLOYMENT TOPOLOGY GUIDE:
+# 
+# 1. Full Production Stack (docker-compose.prod.yml):
+#    - Complete self-contained production environment.
+#    - Provisions: PostgreSQL, Redis, Kafka, Backend API, and Next.js Frontend.
+#    - Kafka is ENABLED and used for message publishing and event-driven updates.
+# 
+# 2. Free Managed Cloud Demo (Spring Profile: cloud):
+#    - Runs on external free-tier managed cloud platforms (e.g. Render, Vercel, Upstash).
+#    - Kafka is DISABLED (KAFKA_ENABLED=false) to avoid paid broker dependencies.
+#    - In-memory event dispatching replaces Kafka brokers automatically, keeping
+#      all business features (allocations, database audit logs, Redis dashboard updates)
+#      fully functional for testing and demoing without changing any domain logic.
+# ==============================================================================
 version: '3.8'
 
 networks:

@@ -55,7 +55,7 @@ public class AllocationService {
     }
 
     public AllocationResponseDto allocateResources(Long requestId, String strategyName) {
-        EmergencyRequest request = requestRepository.findById(requestId)
+        EmergencyRequest request = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Emergency request not found with id: " + requestId));
 
         if ("FULLY_ALLOCATED".equalsIgnoreCase(request.getStatus()) || "FULFILLED".equalsIgnoreCase(request.getStatus())) {
