@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.springframework.data.redis.core.RedisTemplate;
+
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
 
@@ -39,12 +41,14 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final RoadRepository roadRepository;
     private final EmergencyRequestRepository requestRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     public DatabaseSeeder(UserRepository userRepository, DepotRepository depotRepository,
                           EmergencyZoneRepository zoneRepository, ShelterRepository shelterRepository,
                           ResourceRepository resourceRepository, VehicleRepository vehicleRepository,
                           DriverRepository driverRepository, RoadRepository roadRepository,
-                          EmergencyRequestRepository requestRepository, PasswordEncoder passwordEncoder) {
+                          EmergencyRequestRepository requestRepository, PasswordEncoder passwordEncoder,
+                          RedisTemplate<String, Object> redisTemplate) {
         this.userRepository = userRepository;
         this.depotRepository = depotRepository;
         this.zoneRepository = zoneRepository;
@@ -55,10 +59,21 @@ public class DatabaseSeeder implements CommandLineRunner {
         this.roadRepository = roadRepository;
         this.requestRepository = requestRepository;
         this.passwordEncoder = passwordEncoder;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
     public void run(String... args) throws Exception {
+        // Clear stale metrics cache from Redis on startup
+        try {
+            java.util.Set<String> keys = redisTemplate.keys("metrics:*");
+            if (keys != null && !keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
+        } catch (Exception e) {
+            // Ignore Redis errors if it is down/unreachable
+        }
+
         if (userRepository.count() > 0) {
             return; // Already seeded
         }

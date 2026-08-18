@@ -77,14 +77,14 @@ export default function DashboardPage() {
         { name: '09:00', responseTime: 18 },
         { name: '10:00', responseTime: 19 },
         { name: '11:00', responseTime: 15 },
-        { name: '12:00', responseTime: 18.3 }
+        { name: '12:00', responseTime: metrics?.avgResponseTimeMinutes || 18.3 }
     ];
 
     const categoryData = [
-        { name: 'Food', count: 42, color: '#f43f5e' },
-        { name: 'Water', count: 35, color: '#0ea5e9' },
-        { name: 'Medical', count: 18, color: '#10b981' },
-        { name: 'Shelter', count: 28, color: '#f59e0b' }
+        { name: 'Food', count: metrics?.resourceAllocationByCategory?.FOOD || 0, color: '#f43f5e' },
+        { name: 'Water', count: metrics?.resourceAllocationByCategory?.WATER || 0, color: '#0ea5e9' },
+        { name: 'Medical', count: metrics?.resourceAllocationByCategory?.MEDICAL || 0, color: '#10b981' },
+        { name: 'Shelter', count: metrics?.resourceAllocationByCategory?.SHELTER || 0, color: '#f59e0b' }
     ];
 
     return (
