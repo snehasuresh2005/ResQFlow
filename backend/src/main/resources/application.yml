@@ -1,0 +1,40 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: resqflow
+  main:
+    allow-bean-definition-overriding: true
+
+resqflow:
+  jwt:
+    secret: ${JWT_SECRET:dGhpcy1pcy1hLXNlY3VyZS1hbmQtc3Ryb25nLWp3dC1zZWNyZXQta2V5LXRoYXQtbXVzdC1iZS0yNTYtYml0cw==}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24 hours
+  idempotency:
+    ttl-seconds: ${IDEMPOTENCY_TTL_SECONDS:3600} # 1 hour
+  allocation:
+    default-strategy: HYBRID
+    weights:
+      urgency: ${WEIGHT_URGENCY:0.3}
+      proximity: ${WEIGHT_PROXIMITY:0.25}
+      expiry: ${WEIGHT_EXPIRY:0.2}
+      quantity: ${WEIGHT_QUANTITY:0.15}
+      deadline: ${WEIGHT_DEADLINE:0.1}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
