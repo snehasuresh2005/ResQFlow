@@ -36,13 +36,15 @@ public class AnalyticsController {
 
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardMetricsDto> getDashboardMetrics() {
-        long totalReqs = getMetric("metrics:total_requests", () -> requestRepository.count());
-        long criticalReqs = getMetric("metrics:critical_requests", () -> 
-                requestRepository.findAll().stream().filter(r -> "CRITICAL".equalsIgnoreCase(r.getPriority())).count());
-        long activeMissions = getMetric("metrics:active_missions", () -> 
-                missionRepository.findAll().stream().filter(m -> !"DELIVERED".equalsIgnoreCase(m.getStatus()) && !"FAILED".equalsIgnoreCase(m.getStatus()) && !"CANCELLED".equalsIgnoreCase(m.getStatus())).count());
-        long vehiclesInTransit = getMetric("metrics:vehicles_in_transit", () -> 
-                missionRepository.findByStatus("IN_TRANSIT").size());
+        long totalReqs = requestRepository.count();
+        long criticalReqs = requestRepository.findAll().stream()
+                .filter(r -> "CRITICAL".equalsIgnoreCase(r.getPriority())).count();
+        long activeMissions = missionRepository.findAll().stream()
+                .filter(m -> !"DELIVERED".equalsIgnoreCase(m.getStatus()) && 
+                             !"FAILED".equalsIgnoreCase(m.getStatus()) && 
+                             !"CANCELLED".equalsIgnoreCase(m.getStatus()))
+                .count();
+        long vehiclesInTransit = missionRepository.findByStatus("IN_TRANSIT").size();
 
         // Calculate fulfillment rate
         long total = requestRepository.count();
@@ -88,20 +90,5 @@ public class AnalyticsController {
     @GetMapping("/audits")
     public ResponseEntity<List<AuditLog>> getAuditLogs() {
         return ResponseEntity.ok(auditLogRepository.findAllByOrderByTimestampDesc().stream().limit(50).collect(Collectors.toList()));
-    }
-
-    private long getMetric(String cacheKey, java.util.function.LongSupplier databaseFallback) {
-        Object cachedVal = redisTemplate.opsForValue().get(cacheKey);
-        if (cachedVal != null) {
-            try {
-                return Long.parseLong(cachedVal.toString());
-            } catch (NumberFormatException e) {
-                // fall through
-            }
-        }
-        
-        long dbVal = databaseFallback.getAsLong();
-        redisTemplate.opsForValue().set(cacheKey, String.valueOf(dbVal), 10, java.util.concurrent.TimeUnit.SECONDS);
-        return dbVal;
     }
 }
