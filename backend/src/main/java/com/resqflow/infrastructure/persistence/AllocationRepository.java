@@ -12,9 +12,9 @@ public interface AllocationRepository extends JpaRepository<Allocation, Long> {
     List<Allocation> findByRequestId(Long requestId);
     List<Allocation> findByResourceId(Long resourceId);
 
-    @Query("SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (a.createdAt - a.request.createdAt)) / 60.0), 18.3) FROM Allocation a WHERE a.request.createdAt IS NOT NULL AND a.createdAt IS NOT NULL")
+    @Query(value = "SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (a.created_at - r.created_at)) / 60.0), 18.3) FROM allocations a JOIN emergency_requests r ON a.request_id = r.id WHERE r.created_at IS NOT NULL AND a.created_at IS NOT NULL", nativeQuery = true)
     double findAverageResponseTimeMinutes();
 
-    @Query("SELECT UPPER(a.resource.resourceType), COALESCE(SUM(a.quantity), 0) FROM Allocation a WHERE a.resource.resourceType IS NOT NULL GROUP BY UPPER(a.resource.resourceType)")
+    @Query(value = "SELECT UPPER(res.resource_type), COALESCE(SUM(a.quantity), 0) FROM allocations a JOIN resources res ON a.resource_id = res.id WHERE res.resource_type IS NOT NULL GROUP BY UPPER(res.resource_type)", nativeQuery = true)
     List<Object[]> findAllocationSumsByCategory();
 }
