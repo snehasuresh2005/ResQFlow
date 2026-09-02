@@ -7,17 +7,13 @@ export default function RootPage() {
     const router = useRouter();
 
     useEffect(() => {
-        const token = localStorage.getItem('resqflow_token');
-        if (token) {
-            router.replace('/dashboard');
-        } else {
-            router.replace('/login');
-        }
+        router.replace('/login');
     }, [router]);
 
     return (
         <div className="flex h-screen bg-slate-950 items-center justify-center">
-            <div className="text-slate-400 text-sm animate-pulse">Initializing ResQFlow Control Center...</div>
+            <div className="text-slate-400 text-sm animate-pulse">Redirecting to ResQFlow Login...</div>
         </div>
     );
 }
+
