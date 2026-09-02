@@ -88,6 +88,7 @@ export default function RequestsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['requests'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
             setShowForm(false);
             resetForm();
         }
@@ -103,6 +104,9 @@ export default function RequestsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['requests'] });
+            queryClient.invalidateQueries({ queryKey: ['resources'] });
+            queryClient.invalidateQueries({ queryKey: ['availability'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
         }
     });
 
@@ -125,7 +129,14 @@ export default function RequestsPage() {
             return res.json();
         },
         onSuccess: (data) => {
+            // Invalidate ALL affected caches so database updates reflect everywhere immediately
             queryClient.invalidateQueries({ queryKey: ['requests'] });
+            queryClient.invalidateQueries({ queryKey: ['resources'] });
+            queryClient.invalidateQueries({ queryKey: ['availability'] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+            queryClient.invalidateQueries({ queryKey: ['missions'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
+
             setAllocationMsg(`Successfully allocated resources. Mission ID: ${data.missionId || 'N/A'}`);
             setTimeout(() => {
                 setSelectedRequest(null);
@@ -149,6 +160,11 @@ export default function RequestsPage() {
 
     const handleCreate = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!zoneId) {
+            alert('Please select an Emergency Zone.');
+            return;
+        }
+
         const dl = new Date();
         dl.setHours(dl.getHours() + parseInt(durationHours));
 

@@ -55,6 +55,9 @@ export default function MissionsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['missions'] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+            queryClient.invalidateQueries({ queryKey: ['requests'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
         }
     });
 

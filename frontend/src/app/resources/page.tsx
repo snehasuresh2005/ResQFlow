@@ -21,6 +21,18 @@ export default function ResourcesPage() {
 
     const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
+    const queryClient = useQueryClient();
+
+    // Form state for creating new resource batch
+    const [showForm, setShowForm] = useState(false);
+    const [name, setName] = useState('');
+    const [resourceType, setResourceType] = useState('FOOD');
+    const [quantity, setQuantity] = useState('500');
+    const [unit, setUnit] = useState('units');
+    const [depotId, setDepotId] = useState('');
+    const [daysToExpiry, setDaysToExpiry] = useState('30');
+    const [errorMsg, setErrorMsg] = useState('');
+
     // Queries
     const { data: resources, isLoading: resLoading } = useQuery({
         queryKey: ['resources'],
@@ -44,6 +56,82 @@ export default function ResourcesPage() {
         enabled: !!token
     });
 
+    const { data: locationData } = useQuery({
+        queryKey: ['locations'],
+        queryFn: async () => {
+            const res = await fetch(`${apiBase}/locations`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('resqflow_token')}` }
+            });
+            return res.json();
+        },
+        enabled: !!token
+    });
+
+    // Mutations
+    const createResourceMutation = useMutation({
+        mutationFn: async (payload: any) => {
+            const res = await fetch(`${apiBase}/resources`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('resqflow_token')}`
+                },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || 'Failed to create resource batch');
+            }
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['resources'] });
+            queryClient.invalidateQueries({ queryKey: ['availability'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
+            setShowForm(false);
+            resetForm();
+        },
+        onError: (err: any) => {
+            setErrorMsg(err.message);
+        }
+    });
+
+    const resetForm = () => {
+        setName('');
+        setResourceType('FOOD');
+        setQuantity('500');
+        setUnit('units');
+        setDepotId('');
+        setDaysToExpiry('30');
+        setErrorMsg('');
+    };
+
+    const handleCreateResource = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!depotId) {
+            alert('Please select a target Depot location.');
+            return;
+        }
+
+        const exp = new Date();
+        exp.setDate(exp.getDate() + parseInt(daysToExpiry));
+        const formattedExp = exp.toISOString().split('T')[0];
+
+        const payload = {
+            name,
+            resourceType,
+            quantity: parseFloat(quantity),
+            unit,
+            depotId: parseInt(depotId),
+            expiryDate: formattedExp,
+            priority: 1,
+            weightPerUnit: 1.0,
+            volumePerUnit: 0.5
+        };
+
+        createResourceMutation.mutate(payload);
+    };
+
     if (!token || resLoading) {
         return (
             <div className="flex h-screen bg-slate-950 items-center justify-center">
@@ -58,10 +146,118 @@ export default function ResourcesPage() {
 
             <main className="flex-1 p-8 space-y-6 overflow-y-auto max-h-screen">
                 {/* Header */}
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-white">Resource Warehouses</h2>
-                    <p className="text-sm text-slate-400">Inventory stores distributed across depots</p>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight text-white">Resource Warehouses</h2>
+                        <p className="text-sm text-slate-400">Inventory stores distributed across depots</p>
+                    </div>
+                    <button
+                        onClick={() => setShowForm(!showForm)}
+                        className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm cursor-pointer transition-all shadow-lg shadow-rose-950/20"
+                    >
+                        {showForm ? <AlertCircle className="h-5 w-5" /> : <Warehouse className="h-5 w-5" />}
+                        {showForm ? 'Close Panel' : 'New Supply Batch'}
+                    </button>
                 </div>
+
+                {/* Form Drawer */}
+                {showForm && (
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                        <h3 className="text-md font-bold text-slate-200">Register Supply Stock Batch</h3>
+                        {errorMsg && (
+                            <div className="p-3 bg-rose-950/40 border border-rose-900/50 rounded-xl text-xs text-rose-300">
+                                {errorMsg}
+                            </div>
+                        )}
+                        <form onSubmit={handleCreateResource} className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-500">Batch Name</label>
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="e.g. High-energy Food Ration Pack"
+                                    className="w-full bg-slate-950 border border-slate-850 rounded-xl py-2 px-3 text-sm text-slate-300 focus:outline-none"
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-500">Resource Category</label>
+                                <select
+                                    value={resourceType}
+                                    onChange={(e) => setResourceType(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-850 rounded-xl py-2 px-3 text-sm text-slate-300 focus:outline-none"
+                                >
+                                    <option value="FOOD">FOOD</option>
+                                    <option value="WATER">WATER</option>
+                                    <option value="MEDICAL">MEDICAL</option>
+                                    <option value="SHELTER">SHELTER</option>
+                                    <option value="EQUIPMENT">EQUIPMENT</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-500">Depot Warehouse</label>
+                                <select
+                                    value={depotId}
+                                    onChange={(e) => setDepotId(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-850 rounded-xl py-2 px-3 text-sm text-slate-300 focus:outline-none"
+                                    required
+                                >
+                                    <option value="">Select Depot</option>
+                                    {locationData?.depots?.map((d: any) => (
+                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-500">Quantity</label>
+                                <input
+                                    type="number"
+                                    value={quantity}
+                                    onChange={(e) => setQuantity(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-850 rounded-xl py-2 px-3 text-sm text-slate-300 focus:outline-none"
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-500">Measurement Unit</label>
+                                <input
+                                    type="text"
+                                    value={unit}
+                                    onChange={(e) => setUnit(e.target.value)}
+                                    placeholder="units, litres, kits..."
+                                    className="w-full bg-slate-950 border border-slate-850 rounded-xl py-2 px-3 text-sm text-slate-300 focus:outline-none"
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-500">Days to Expiry</label>
+                                <input
+                                    type="number"
+                                    value={daysToExpiry}
+                                    onChange={(e) => setDaysToExpiry(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-850 rounded-xl py-2 px-3 text-sm text-slate-300 focus:outline-none"
+                                    required
+                                />
+                            </div>
+
+                            <div className="md:col-span-3 flex justify-end">
+                                <button
+                                    type="submit"
+                                    disabled={createResourceMutation.isPending}
+                                    className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800 text-white font-semibold px-6 py-2.5 rounded-xl text-sm cursor-pointer transition-all"
+                                >
+                                    {createResourceMutation.isPending ? 'Registering Stock...' : 'Save Resource Stock'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
 
                 {/* Aggregated Availability Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
