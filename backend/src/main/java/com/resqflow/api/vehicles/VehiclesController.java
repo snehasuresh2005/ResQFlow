@@ -20,14 +20,14 @@ public class VehiclesController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     public ResponseEntity<VehicleDto> createVehicle(@Valid @RequestBody CreateVehicleDto dto) {
         VehicleDto created = vehicleService.createVehicle(dto);
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     public ResponseEntity<VehicleDto> updateVehicle(@PathVariable Long id, @Valid @RequestBody CreateVehicleDto dto) {
         return ResponseEntity.ok(vehicleService.updateVehicle(id, dto));
     }
