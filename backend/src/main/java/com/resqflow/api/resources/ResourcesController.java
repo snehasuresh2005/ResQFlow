@@ -20,14 +20,14 @@ public class ResourcesController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     public ResponseEntity<ResourceDto> createResource(@Valid @RequestBody CreateResourceDto dto) {
         ResourceDto created = resourceService.createResource(dto);
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
     public ResponseEntity<ResourceDto> updateResource(@PathVariable Long id, @Valid @RequestBody CreateResourceDto dto) {
         return ResponseEntity.ok(resourceService.updateResource(id, dto));
     }
